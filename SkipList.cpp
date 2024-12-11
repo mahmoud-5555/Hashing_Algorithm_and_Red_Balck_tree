@@ -149,6 +149,20 @@ public:
         }
         return searchHead;
     }
+    SkipListHeadNode<T> *removeFromHead(T value, int &searchLevel, SkipListNode<T> **deletedNode)
+    {
+        SkipListHeadNode<T> *searchHead = getSearchHead(value, searchLevel);
+        *deletedNode = nullptr;
+        while (searchHead && searchHead->node && *(searchHead->node) == value)
+        {
+            *deletedNode = searchHead->node;
+            searchHead->node = searchHead->node->next(searchLevel);
+            (*deletedNode)->setNext(nullptr, searchLevel);
+            searchLevel--;
+            searchHead = searchHead->prevLevelHead;
+        }
+        return searchHead;
+    }
     SkipListHead()
     {
         last = &head;
@@ -189,6 +203,48 @@ private:
     }
 
 public:
+    int getCount()
+    {
+        return count;
+    }
+    bool remove(T value)
+    {
+        int searchLevel;
+        SkipListNode<T> *deletedNode = nullptr;
+        SkipListHeadNode<T> *searchHead = head.removeFromHead(value, searchLevel, &deletedNode);
+        SkipListNode<T> *searchNode = searchHead ? searchHead->node : nullptr;
+        while (searchNode && searchLevel >= 0)
+        {
+            SkipListNode<T> *nextNode = searchNode->next(searchLevel);
+            if (nextNode && *nextNode == value)
+            {
+
+                deletedNode = nextNode;
+                searchNode->setNext(nextNode->next(searchLevel), searchLevel);
+                deletedNode->setNext(nullptr, searchLevel);
+                searchLevel--;
+            }
+
+            else if (nextNode && *nextNode < value)
+            {
+                searchNode = nextNode;
+            }
+
+            else
+            {
+                searchLevel--;
+            }
+        }
+
+        if (deletedNode)
+        {
+
+            count--;
+            delete deletedNode;
+            return true;
+        }
+        return false;
+    }
     SkipListNode<T> *find(T value, bool printPath = false)
     {
         int searchLevel;
@@ -260,10 +316,6 @@ public:
         }
     }
 
-    int getCount()
-    {
-        return count;
-    }
     SkipListNode<T> *insert(T value)
     {
         if (find(value))
@@ -304,7 +356,10 @@ public:
                  << endl;
             return;
         }
-
+        cout << "Skip list has: " << endl;
+        cout << head.getLevelCount() << " levels" << endl;
+        cout << count << " items" << endl
+             << endl;
         SkipListHeadNode<T> *currentHead = head.getLastLevelHead();
         int level = head.getLevelCount() - 1;
 
@@ -362,24 +417,40 @@ int main()
         case 1:
         {
             int number;
-            cout << "Enter a number to insert to skip list: ";
+            cout << "Enter a number to insert: ";
             cin >> number;
             SkipListNode<int> *r = skipList.insert(number);
             if (r)
             {
+                cout << *r << " is inserted up to level " << r->getLevelCount();
                 if (r->next())
                 {
-                    cout << *r << " inserted before: " << *(r->next()) << endl;
+                    cout << "  before item: " << *(r->next()) << endl;
                 }
                 else
                 {
 
-                    cout << *r << " inserted at end of list" << endl;
+                    cout << "  at end of list" << endl;
                 }
             }
             else
             {
                 cout << number << " alread exists in list!" << endl;
+            }
+        }
+        break;
+        case 2:
+        {
+            int number;
+            cout << "Enter a number to delete: ";
+            cin >> number;
+            if (skipList.remove(number))
+            {
+                cout << "removed " << number << "." << endl;
+            }
+            else
+            {
+                cout << number << " does not exist!" << endl;
             }
         }
         break;
