@@ -395,8 +395,7 @@ public:
         }
     }
 };
-
-int main()
+void taskA()
 {
     cout << "Skip List: " << endl;
     SkipList<int> skipList;
@@ -469,5 +468,30 @@ int main()
             cout << "Invalid selection (" << selection << ")!" << endl;
             break;
         }
+    }
+}
+void taskB()
+{
+}
+int main()
+{
+    cout << "Task 3: " << endl;
+    cout << "Select:" << endl;
+    cout << "A. Skip List" << endl;
+    char choice;
+    cin >> choice;
+    switch (choice)
+    {
+    case 'A':
+    case 'a':
+        taskA();
+        break;
+    case 'B':
+    case 'b':
+        taskB();
+        break;
+    default:
+        main();
+        break;
     }
 }
