@@ -11,7 +11,7 @@ private:
 
 public:
     T value;
-    int getLevelCount()
+    int getLevelCount() const
     {
         return levelCount;
     }
@@ -66,7 +66,7 @@ template <typename T>
 class SkipListHead
 {
     int levelCount = 1;
-    SkipListHeadNode<T> head;
+    SkipListHeadNode<T>* head;
     SkipListHeadNode<T> *last;
     void addLevel()
     {
@@ -82,7 +82,7 @@ class SkipListHead
             throw out_of_range("Level is out of valid range.");
         }
         int currentLevel = 0;
-        SkipListHeadNode<T> *current = &head;
+        SkipListHeadNode<T> *current = head;
         while (currentLevel < level)
         {
             currentLevel++;
@@ -99,15 +99,15 @@ class SkipListHead
     }
 
 public:
-    int getLevelCount()
+    int getLevelCount() const
     {
         return levelCount;
     }
-    SkipListHeadNode<T> *getFirstLevelHead()
+    SkipListHeadNode<T> *getFirstLevelHead() const
     {
-        return &head;
+        return head;
     }
-    SkipListHeadNode<T> *getLastLevelHead()
+    SkipListHeadNode<T> *getLastLevelHead() const
     {
         return last;
     }
@@ -125,7 +125,7 @@ public:
         }
         return h;
     }
-    SkipListHeadNode<T> *getSearchHead(T value, int &level, bool printPath = false)
+    SkipListHeadNode<T> *getSearchHead(T value, int &level, bool printPath = false) const
     {
         level = levelCount - 1;
         SkipListHeadNode<T> *searchHead = last;
@@ -165,11 +165,12 @@ public:
     }
     SkipListHead()
     {
-        last = &head;
+        head = new SkipListHeadNode<T>();
+        last = head;
     }
     ~SkipListHead()
     {
-        SkipListHeadNode<T> *current = head.nextLevelHead;
+        SkipListHeadNode<T> *current = head;
         while (current)
         {
             SkipListHeadNode<T> *temp = current->nextLevelHead;
@@ -203,7 +204,7 @@ private:
     }
 
 public:
-    int getCount()
+    int getCount() const
     {
         return count;
     }
@@ -245,7 +246,7 @@ public:
         }
         return false;
     }
-    SkipListNode<T> *find(T value, bool printPath = false)
+    const SkipListNode<T> *find(T value, bool printPath = false) const
     {
         int searchLevel;
         SkipListHeadNode<T> *searchHead = head.getSearchHead(value, searchLevel, printPath);
@@ -302,10 +303,10 @@ public:
 
         return nullptr;
     }
-    void printPathTo(T value)
+    void printPathTo(T value) const
     {
         cout << "Searching for " << value << ":" << endl;
-        SkipListNode<T> *r = find(value, true);
+        const SkipListNode<T> *r = find(value, true);
         if (r)
         {
             cout << value << " found as " << *r << endl;
@@ -348,7 +349,7 @@ public:
         }
         return node;
     }
-    void print()
+    void print() const
     {
         if (count == 0)
         {
@@ -384,6 +385,14 @@ public:
         cout << endl;
     }
     SkipList() : gen(rd()), distr(1, 1000) {}
+    template <typename Container>
+    SkipList(const Container &array) : gen(rd()), distr(1, 1000)
+    {
+        for (const auto &value : array)
+        {
+            insert(value);
+        }
+    }
     ~SkipList()
     {
         SkipListNode<T> *node = head.getFirstLevelHead()->node;
