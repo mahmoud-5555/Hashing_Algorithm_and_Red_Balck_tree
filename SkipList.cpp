@@ -1,5 +1,6 @@
 #include <iostream>
 #include <random>
+#include <string>
 using namespace std;
 
 template <typename T>
@@ -21,7 +22,7 @@ public:
         this->levelCount = levelCount;
         this->value = value;
     }
-    SkipListNode<T> *next(int level = 0)
+    SkipListNode<T> *next(int level = 0) const
     {
         if (level < 0 || level >= levelCount)
         {
@@ -66,7 +67,7 @@ template <typename T>
 class SkipListHead
 {
     int levelCount = 1;
-    SkipListHeadNode<T>* head;
+    SkipListHeadNode<T> *head;
     SkipListHeadNode<T> *last;
     void addLevel()
     {
@@ -153,7 +154,7 @@ public:
     {
         SkipListHeadNode<T> *searchHead = getSearchHead(value, searchLevel);
         *deletedNode = nullptr;
-        while (searchHead && searchHead->node && *(searchHead->node) == value)
+        while (searchHead && searchHead->node && searchHead->node->value == value)
         {
             *deletedNode = searchHead->node;
             searchHead->node = searchHead->node->next(searchLevel);
@@ -217,7 +218,7 @@ public:
         while (searchNode && searchLevel >= 0)
         {
             SkipListNode<T> *nextNode = searchNode->next(searchLevel);
-            if (nextNode && *nextNode == value)
+            if (nextNode && nextNode->value == value)
             {
 
                 deletedNode = nextNode;
@@ -226,7 +227,7 @@ public:
                 searchLevel--;
             }
 
-            else if (nextNode && *nextNode < value)
+            else if (nextNode && nextNode->value < value)
             {
                 searchNode = nextNode;
             }
@@ -274,15 +275,15 @@ public:
                     cout << "Null" << endl;
                 }
             }
-            if (*searchNode == value)
+            if (searchNode->value == value)
             {
                 return searchNode;
             }
-            else if (searchLevel == 0 && next && *next > value)
+            else if (searchLevel == 0 && next && next->value > value)
             {
                 return nullptr;
             }
-            while ((searchLevel > 0) && (!next || *next > value))
+            while ((searchLevel > 0) && (!next || next->value > value))
             {
                 searchLevel--;
                 next = searchNode->next(searchLevel);
@@ -349,7 +350,7 @@ public:
         }
         return node;
     }
-    void print() const
+    void printFullList() const
     {
         if (count == 0)
         {
@@ -384,6 +385,31 @@ public:
         }
         cout << endl;
     }
+    void printItems() const
+    {
+        cout << "List: ";
+        SkipListNode<T> *node = head.getFirstLevelHead()->node;
+        if (!node)
+        {
+            cout << "empty" << endl;
+            return;
+        }
+        while (node)
+        {
+            cout << *node << (node->next() ? ", " : ".");
+            node = node->next();
+        }
+        cout << endl;
+    }
+    const SkipListNode<T> *getFirstNode()
+    {
+        return head.getFirstLevelHead()->node;
+    }
+    bool exists(T value)
+    {
+        const SkipListNode<T> *node = find(value);
+        return node;
+    }
     SkipList() : gen(rd()), distr(1, 1000) {}
     template <typename Container>
     SkipList(const Container &array) : gen(rd()), distr(1, 1000)
@@ -412,7 +438,7 @@ void taskA()
     while (run)
     {
         cout << "current skip list:" << endl;
-        skipList.print();
+        skipList.printFullList();
         cout << "Select action:" << endl;
         cout << "1. Insert:" << endl;
         cout << "2. Delete:" << endl;
@@ -471,6 +497,7 @@ void taskA()
         }
         break;
         case 4:
+            cout << "Exiting" << endl;
             run = false;
             break;
         default:
@@ -479,14 +506,260 @@ void taskA()
         }
     }
 }
+struct Score
+{
+    unsigned int score;
+    string name;
+    bool compareByScore;
+    Score(unsigned int score = 0, string name = "", bool compareByScore = true)
+        : score(score), name(name), compareByScore(compareByScore) {}
+    bool operator==(const Score &other) const
+    {
+        if (compareByScore && this->score != other.score)
+        {
+            return false;
+        }
+        return this->name == other.name;
+    }
+    bool operator<(const Score &other) const
+    {
+        if (compareByScore && this->score != other.score)
+        {
+            return this->score < other.score;
+        }
+        return this->name < other.name;
+    }
+    bool operator>(const Score &other) const
+    {
+        if (compareByScore && this->score != other.score)
+        {
+            return this->score > other.score;
+        }
+        return this->name > other.name;
+    }
+    bool operator<=(const Score &other) const
+    {
+        return (*this < other) || (*this == other);
+    }
+    bool operator>=(const Score &other) const
+    {
+        return (*this > other) || (*this == other);
+    }
+
+    bool operator!=(const Score &other) const
+    {
+        return !(*this == other);
+    }
+    friend ostream &operator<<(ostream &out, const Score &score);
+};
+ostream &operator<<(ostream &out, const Score &score)
+{
+    out << "Name: " << score.name << ", Score: " << score.score;
+    return out;
+}
+class ScoreManager
+{
+private:
+    SkipList<Score> scoresByScore;
+    SkipList<Score> scoresByName;
+
+public:
+    bool addScore(string name, unsigned int score)
+    {
+        Score byScore(score, name, true);
+        Score byName(score, name, false);
+        if (scoresByName.exists(byName))
+        {
+            cout << "Player " << name << " already exists!" << endl;
+            return false;
+        }
+        scoresByScore.insert(byScore);
+        scoresByName.insert(byName);
+        return true;
+    }
+    int getScore(string name)
+    {
+        Score byName(0, name, false);
+        const SkipListNode<Score> *node = scoresByName.find(byName);
+        if (!node)
+        {
+            return -1;
+        }
+        return node->value.score;
+    }
+    bool removeScore(string name)
+    {
+        Score byName(0, name, false);
+        const SkipListNode<Score> *record = scoresByName.find(byName);
+        if (record)
+        {
+            int score = record->value.score;
+            Score byScore(score, name, true);
+            scoresByName.remove(byName);
+            scoresByScore.remove(byScore);
+            return true;
+        }
+        return false;
+    }
+    bool updatePlayeScore(string name, unsigned int newScore)
+    {
+        if (!removeScore(name))
+        {
+            return false;
+        }
+        return addScore(name, newScore);
+    }
+    void printScores()
+    {
+        scoresByScore.printItems();
+    }
+    void printTopPlayers(unsigned int count)
+    {
+        if (scoresByScore.getCount() == 0)
+        {
+            cout << "No players found" << endl;
+        }
+
+        else if (count > scoresByScore.getCount())
+        {
+            cout << "Only " << scoresByScore.getCount() << " exists!" << endl;
+            cout << "Top " << scoresByScore.getCount() << ": ";
+            printScores();
+        }
+        else
+        {
+            cout << "Top " << count << ":" << endl;
+            const SkipListNode<Score> *node = scoresByScore.getFirstNode();
+            const int printIndex = scoresByScore.getCount() - count;
+            int index = 0;
+            while (node)
+            {
+                if (index >= printIndex)
+                {
+                    cout << *node << ",, ";
+                }
+
+                node = node->next();
+                index++;
+            }
+            cout << endl;
+        }
+    }
+};
+
 void taskB()
 {
+    cout << "Score Management: " << endl;
+    ScoreManager scoreManager;
+    bool run = true;
+    while (run)
+    {
+        cout << "Current scores:" << endl;
+        scoreManager.printScores();
+        cout << "Select action:" << endl;
+        cout << "1. add player:" << endl;
+        cout << "2. delete player:" << endl;
+        cout << "3. get player score:" << endl;
+        cout << "4. update player:" << endl;
+        cout << "5. get top players:" << endl;
+        cout << "6. Exit:" << endl;
+        char choice;
+        cin >> choice;
+        switch (choice)
+        {
+        case '1':
+        {
+            cout << "Enter Player Name: ";
+            string name;
+            cin >> name;
+            cout << "Enter Player Score: ";
+            unsigned int score;
+            cin >> score;
+            if (scoreManager.addScore(name, score))
+            {
+                cout << "Player inserted." << endl;
+            }
+            else
+            {
+                cout << "Player " << name << " not inserted." << endl;
+            }
+            break;
+        }
+        case '2':
+        {
+
+            cout << "Enter Player Name: ";
+            string name;
+            cin >> name;
+            if (scoreManager.removeScore(name))
+            {
+                cout << "player removed" << endl;
+            }
+            else
+            {
+                cout << "Player " << name << " not removed." << endl;
+            }
+            break;
+        }
+        case '3':
+        {
+            cout << "Enter Player Name: ";
+            string name;
+            cin >> name;
+            int score = scoreManager.getScore(name);
+            if (score >= 0)
+            {
+                cout << "Score: " << score << endl;
+            }
+            else
+            {
+                cout << "Player " << name << " does not exist!" << endl;
+            }
+            break;
+        }
+        case '4':
+        {
+            cout << "Enter Player Name: ";
+            string name;
+            cin >> name;
+            cout << "Enter new Score: ";
+            unsigned int newScore;
+            cin >> newScore;
+            if (scoreManager.updatePlayeScore(name, newScore))
+            {
+                cout << "Player Score Updated" << endl;
+            }
+            else
+            {
+                cout << "Player " << name << " not updated." << endl;
+            }
+            break;
+        }
+        case '5':
+        {
+            cout << "Enter Number of Players: ";
+            unsigned int num;
+            cin >> num;
+            scoreManager.printTopPlayers(num);
+            break;
+        }
+        case '6':
+            cout << "Exiting" << endl;
+            run = false;
+            break;
+
+        default:
+            cout << "Invalid selection!" << endl;
+            break;
+        }
+    }
 }
 int main()
 {
     cout << "Task 3: " << endl;
     cout << "Select:" << endl;
     cout << "A. Skip List" << endl;
+    cout << "B. Score Management" << endl;
     char choice;
     cin >> choice;
     switch (choice)
