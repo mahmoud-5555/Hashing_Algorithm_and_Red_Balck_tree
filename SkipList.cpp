@@ -328,7 +328,7 @@ public:
         count++;
         const int levelCount = getRandomLevelCount();
         int level = levelCount - 1;
-        SkipListNode<T> *node = new SkipListNode(value, levelCount);
+        SkipListNode<T> *node = new SkipListNode<T>(value, levelCount);
         SkipListHeadNode<T> *insertionHead = head.insertToHead(node, level);
         if (!insertionHead)
         {
